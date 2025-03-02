@@ -14,9 +14,8 @@ const io = new Server(server, {
   },
 });
 
-const rooms = {}; // Store rooms with hosts and users
+const rooms = {};
 
-// Function to generate a 4-letter uppercase room ID
 const generateRoomId = () => {
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let roomId = "";
@@ -29,12 +28,11 @@ const generateRoomId = () => {
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
 
-  // Create Room (Assign Host)
   socket.on("create_room", (username) => {
     let roomId;
     do {
       roomId = generateRoomId();
-    } while (rooms[roomId]); // Ensure unique ID
+    } while (rooms[roomId]);
 
     rooms[roomId] = {
       host: socket.id,
@@ -44,51 +42,54 @@ io.on("connection", (socket) => {
     socket.join(roomId);
     console.log(`Room created: ${roomId} by host ${socket.id}`);
 
-    // Notify the creator
     socket.emit("room_created", roomId);
 
-    // Send updated user list to the room
     io.to(roomId).emit("update_users", rooms[roomId].users);
+    console.log(rooms);
   });
 
-  // Join Room
   socket.on("join_room", ({ username, roomId }) => {
     if (rooms[roomId]) {
       socket.join(roomId);
       rooms[roomId].users.push({ id: socket.id, username });
+      console.log(`${username} joined ${roomId}`);
 
-      // Notify all users in the room about the updated user list
       io.to(roomId).emit("update_users", rooms[roomId].users);
+      socket.emit("room_found");
+      console.log(rooms);
     } else {
       socket.emit("error", "Room not found");
     }
   });
 
-  // User Leaves Room
   socket.on("leave_room", (roomId) => {
     socket.leave(roomId);
 
     if (rooms[roomId]) {
-      // Remove user from the room
       rooms[roomId].users = rooms[roomId].users.filter(
         (user) => user.id !== socket.id
       );
 
-      // If the room is empty, delete it
       if (rooms[roomId].users.length === 0) {
         delete rooms[roomId];
       } else {
-        // Notify all users in the room about the updated user list
         io.to(roomId).emit("update_users", rooms[roomId].users);
       }
+      console.log(rooms);
     }
   });
 
-  // Handle Disconnection
+  socket.on("room_exist", (roomId, callback) => {
+    if (rooms[roomId]) {
+      callback(true); // Room exists
+    } else {
+      callback(false); // Room not found
+    }
+  });
+
   socket.on("disconnect", () => {
     console.log(`User disconnected: ${socket.id}`);
 
-    // Remove user from all rooms
     for (let roomId in rooms) {
       rooms[roomId].users = rooms[roomId].users.filter(
         (user) => user.id !== socket.id
@@ -100,6 +101,7 @@ io.on("connection", (socket) => {
         io.to(roomId).emit("update_users", rooms[roomId].users);
       }
     }
+    console.log(rooms);
   });
 });
 
