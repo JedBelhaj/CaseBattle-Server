@@ -25,6 +25,12 @@ const generateRoomId = () => {
   return roomId;
 };
 
+const updateUsers = (roomId) => {
+  if (rooms[roomId]) {
+    io.to(roomId).emit("update_users", rooms[roomId].users);
+  }
+};
+
 io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
 
@@ -44,8 +50,12 @@ io.on("connection", (socket) => {
 
     socket.emit("room_created", roomId);
 
-    io.to(roomId).emit("update_users", rooms[roomId].users);
+    updateUsers(roomId);
     console.log(rooms);
+  });
+
+  socket.on("req_update_users", (roomId) => {
+    updateUsers(roomId);
   });
 
   socket.on("join_room", ({ username, roomId }) => {
@@ -54,7 +64,7 @@ io.on("connection", (socket) => {
       rooms[roomId].users.push({ id: socket.id, username });
       console.log(`${username} joined ${roomId}`);
 
-      io.to(roomId).emit("update_users", rooms[roomId].users);
+      updateUsers(roomId);
       socket.emit("room_found");
       console.log(rooms);
     } else {
@@ -73,7 +83,7 @@ io.on("connection", (socket) => {
       if (rooms[roomId].users.length === 0) {
         delete rooms[roomId];
       } else {
-        io.to(roomId).emit("update_users", rooms[roomId].users);
+        updateUsers(roomId);
       }
       console.log(rooms);
     }
@@ -98,7 +108,7 @@ io.on("connection", (socket) => {
       if (rooms[roomId].users.length === 0) {
         delete rooms[roomId];
       } else {
-        io.to(roomId).emit("update_users", rooms[roomId].users);
+        updateUsers(roomId);
       }
     }
     console.log(rooms);
