@@ -28,13 +28,15 @@ const handleSocketEvents = (io, socket) => {
 
   socket.on("join_room", ({ username, roomId }) => {
     if (roomExists(roomId)) {
-      socket.join(roomId);
-      addUserToRoom(roomId, socket.id, username);
-      console.log(`${username} joined ${roomId}`);
+      if (username) {
+        socket.join(roomId);
+        addUserToRoom(roomId, socket.id, username);
+        console.log(`${username} joined ${roomId}`);
 
-      updateUsers(io, roomId);
-      socket.emit("room_found");
-      console.log(rooms);
+        updateUsers(io, roomId);
+        socket.emit("room_found");
+        console.log(rooms);
+      }
     } else {
       socket.emit("error", "Room not found");
     }

@@ -90,7 +90,35 @@ const getActiveUsersInRoom = (roomId) => {
  */
 const updateUsers = (io, roomId) => {
   if (rooms[roomId]) {
-    io.to(roomId).emit("update_users", Object.values(rooms[roomId].users));
+    if (!isHostOnline(roomId)) {
+      console.log("changing hosts...");
+      assignNewHost(roomId);
+      console.log(rooms);
+    }
+    io.to(roomId).emit(
+      "update_users",
+      Object.values(rooms[roomId].users).map((u) => {
+        if (u.name === rooms[roomId].host) {
+          u.host = true;
+        } else {
+          u.host = false;
+        }
+        return u;
+      })
+    );
+  }
+};
+
+const isHostOnline = (roomId) => {
+  const host = rooms[roomId]?.host;
+  return host ? rooms[roomId].users[host]?.activity === true : false;
+};
+
+const assignNewHost = (roomId) => {
+  if (rooms[roomId] && Object.keys(rooms[roomId].users).length > 0) {
+    const activeUsers = getActiveUsersInRoom(roomId);
+    console.log("active users : ", activeUsers);
+    rooms[roomId].host = activeUsers[0].name;
   }
 };
 

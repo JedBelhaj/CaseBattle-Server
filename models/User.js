@@ -4,6 +4,7 @@ class User {
     this.socketId = socketId;
     this.activity = true;
     this.items = [];
+    this.host = false;
   }
 
   addItem(item) {
