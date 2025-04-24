@@ -11,10 +11,6 @@ const {
 } = require("./roomsUtils");
 
 const handleSocketEvents = (io, socket) => {
-  /**
-   * Handle the "create_room" event.
-   * Creates a new room and adds the user as the host.
-   */
   socket.on("create_room", (username) => {
     let roomId;
     do {
@@ -30,10 +26,6 @@ const handleSocketEvents = (io, socket) => {
     updateUsers(io, roomId);
   });
 
-  /**
-   * Handle the "join_room" event.
-   * Adds a user to an existing room.
-   */
   socket.on("join_room", ({ username, roomId }) => {
     if (roomExists(roomId)) {
       socket.join(roomId);
@@ -42,15 +34,12 @@ const handleSocketEvents = (io, socket) => {
 
       updateUsers(io, roomId);
       socket.emit("room_found");
+      console.log(rooms);
     } else {
       socket.emit("error", "Room not found");
     }
   });
 
-  /**
-   * Handle the "leave_room" event.
-   * Removes a user from a room.
-   */
   socket.on("leave_room", (roomId) => {
     if (roomExists(roomId)) {
       removeUserFromRoom(roomId, socket.id);
@@ -59,15 +48,11 @@ const handleSocketEvents = (io, socket) => {
     }
   });
 
-  /**
-   * Handle the "room_exist" event.
-   * Checks if a room exists and sends the result to the client.
-   */
   socket.on("room_exist", (roomId, callback) => {
     callback(roomExists(roomId));
   });
 
-  socket.on("in_room", (roomId, username) => {
+  socket.on("in_room", (roomId, username, callback) => {
     callback(isUserInRoom(roomId, username));
   });
 
@@ -79,10 +64,7 @@ const handleSocketEvents = (io, socket) => {
       socket.emit("error", "Room not found");
     }
   });
-  /**
-   * Handle the "disconnect" event.
-   * Cleans up the user's data when they disconnect.
-   */
+
   socket.on("disconnect", () => {
     console.log(`User disconnected: ${socket.id}`);
     for (let roomId in rooms) {
