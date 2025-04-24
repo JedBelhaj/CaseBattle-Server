@@ -40,10 +40,10 @@ const handleSocketEvents = (io, socket) => {
     }
   });
 
-  socket.on("leave_room", (roomId) => {
+  socket.on("leave_room", (roomId, username) => {
     if (roomExists(roomId)) {
-      removeUserFromRoom(roomId, socket.id);
-      console.log(`User ${socket.id} left room ${roomId}`);
+      markUserInactive(roomId, username);
+      console.log(`User ${username} left room ${roomId}`);
       updateUsers(io, roomId);
     }
   });

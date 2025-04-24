@@ -47,9 +47,9 @@ const addUserToRoom = (roomId, socketId, username) => {
  * @param {string} roomId - The ID of the room.
  * @param {string} socketId - The socket ID of the user.
  */
-const removeUserFromRoom = (roomId, socketId) => {
-  if (rooms[roomId]?.users[socketId]) {
-    delete rooms[roomId].users[socketId];
+const removeUserFromRoom = (roomId, username) => {
+  if (rooms[roomId]?.users[username]) {
+    delete rooms[roomId].users[username];
     if (Object.keys(rooms[roomId].users).length === 0) {
       delete rooms[roomId]; // Delete the room if it's empty
     }
