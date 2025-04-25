@@ -86,8 +86,17 @@ const handleSocketEvents = (io, socket) => {
         console.log(`Active users in room ${roomId}:`, activeUsers);
 
         if (activeUsers.length === 0) {
-          delete rooms[roomId];
-          console.log(`Deleted room ${roomId} as it is empty`);
+          setTimeout(() => {
+            const updatedActiveUsers = getActiveUsersInRoom(roomId);
+            if (updatedActiveUsers.length === 0) {
+              delete rooms[roomId];
+              console.log(
+                `Deleted room ${roomId} as it is still empty after delay`
+              );
+            } else {
+              console.log(`Room ${roomId} is no longer empty after delay`);
+            }
+          }, 1000); // 1 second delay
         } else {
           console.log(`Updating users in room ${roomId}`);
           updateUsers(io, roomId);
