@@ -10,7 +10,7 @@ app.use(cors());
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:8000"],
+    origin: ["*"],
     methods: ["GET", "POST"],
   },
 });
@@ -20,6 +20,6 @@ io.on("connection", (socket) => {
   handleSocketEvents(io, socket);
 });
 
-server.listen(3001, () => {
-  console.log("Server listening on port 3001...");
+server.listen(3000, () => {
+  console.log("Server listening on port 3000...");
 });
