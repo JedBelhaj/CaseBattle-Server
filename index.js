@@ -23,7 +23,7 @@ io.on("connection", (socket) => {
   console.log(`User connected: ${socket.id}`);
   handleSocketEvents(io, socket);
 });
-
-server.listen(3000, () => {
+const port = process.env.PORT | 5000;
+server.listen(port, () => {
   console.log("Server listening on port 3000...");
 });
