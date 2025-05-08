@@ -90,14 +90,14 @@ const getActiveUsersInRoom = (roomId) => {
  */
 const updateUsers = (io, roomId) => {
   if (rooms[roomId]) {
-    if (!isHostOnline(roomId)) {
+    if (!isHostOnline(roomId) && getActiveUsersInRoom(roomId).length !== 0) {
       console.log("changing hosts...");
       setTimeout(() => {
         assignNewHost(roomId);
         console.log(rooms);
         io.to(roomId).emit(
           "update_users",
-          Object.values(rooms[roomId].users).map((u) => {
+          Object.values(rooms[roomId]?.users).map((u) => {
             if (u.name === rooms[roomId].host) {
               u.host = true;
             } else {
@@ -106,7 +106,7 @@ const updateUsers = (io, roomId) => {
             return u;
           })
         );
-      }, 1000);
+      }, 10000);
     } else {
       io.to(roomId).emit(
         "update_users",
@@ -140,6 +140,10 @@ const isUserInRoom = (roomId, username) => {
   return rooms[roomId]?.users[username] !== undefined;
 };
 
+const isUserActive = (roomId, username) => {
+  return rooms[roomId]?.users[username]?.activity | false;
+};
+
 module.exports = {
   rooms,
   generateRoomId,
@@ -150,4 +154,5 @@ module.exports = {
   getActiveUsersInRoom,
   updateUsers,
   isUserInRoom,
+  isUserActive,
 };

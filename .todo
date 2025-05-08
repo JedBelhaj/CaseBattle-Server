@@ -1,8 +1,8 @@
-use opens website
+user opens website
 gets choice to eather crate room or join room
 creating room:
     - [ ] 📃 user gets to choose if the room is public or private
-    - [ ] 🔥 if room is private use should set a password
+    - [ ] 🔥 if room is private user should set a password
     - [ ] 📃 if public no password is set
     - [ ] 📃 if create room button is made the user goes to the room page and gets to choose the settings of the room
     - [ ] 🎉 user waits until other users join and then he can press start game
