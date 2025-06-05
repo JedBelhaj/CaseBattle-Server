@@ -1,0 +1,9 @@
+// this adds intellisens to jest, making life easier, you install the jest types using
+// > npm install @types/jest --save-dev
+{
+    "typeAcquisition": {
+        "include": [
+            "jest"
+        ]
+    }
+}

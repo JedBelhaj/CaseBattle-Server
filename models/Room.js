@@ -1,9 +1,14 @@
-import User from "../models/User.js";
+import User from "./User.js";
 
-export var rooms = {
-  ABCD: {
-    users: [new User("jed"), new User("jed1"), new User("jed3")],
-  },
+export let rooms = {};
+
+export const setRooms = (newRooms) => {
+  console.log("this is for testing purposes only");
+  rooms = newRooms;
+};
+
+export const getRooms = () => {
+  return rooms;
 };
 
 export const getRoom = (roomId) => {
@@ -12,11 +17,14 @@ export const getRoom = (roomId) => {
 
 export const createRoom = (hostUsername) => {
   const roomId = generateUniqueRoomId();
+
   if (roomId) {
     rooms[roomId] = {
       users: [new User(hostUsername, true)],
     };
   }
+
+  return roomId;
 };
 
 export const getUserByName = (username, roomId) => {
@@ -31,11 +39,11 @@ export const getUsers = (roomId) => {
   return rooms[roomId].users;
 };
 
-export const activateUser = (username, roomId) => {
+export const activateUser = (username, roomId, active = true) => {
   const users = getUsers(roomId);
   for (const user of users) {
     if (user.name === username) {
-      user.activity = true;
+      user.activity = active;
       break;
     }
   }

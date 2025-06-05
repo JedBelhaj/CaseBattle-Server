@@ -1,11 +1,14 @@
-const express = require("express");
+import express from "express";
+import {
+  handleGetRoom,
+  handleCreateRoom,
+  handleJoinRoom,
+} from "../controllers/roomController.js";
+
 const router = express.Router();
-const roomsUtils = require("../utils/roomsUtils");
 
-router.post("/create", (req, res) => {
-  const username = req.body.username;
-  const roomId = roomsUtils.createRoom(username);
-  res.json({ roomId });
-});
+router.get("/get", (req, res) => handleGetRoom(req, res));
+router.post("/create", (req, res) => handleCreateRoom(req, res));
+router.post("/join", (req, res) => handleJoinRoom(req, res));
 
-module.exports = router;
+export const roomRoutes = () => router;
