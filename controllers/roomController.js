@@ -1,4 +1,4 @@
-import { createRoom, getRoom, joinRoom } from "../models/Room.js";
+import { createRoom, getRoom, isRoomExist, joinRoom } from "../models/Room.js";
 
 export const handleGetRoom = (req, res) => {
   const room = getRoom(req.query.id);
@@ -23,6 +23,11 @@ export const handleCreateRoom = (req, res) => {
 
 export const handleJoinRoom = (req, res) => {
   const { roomId, username, sessionToken } = req.body;
-  const newUsername = joinRoom(username, sessionToken, roomId);
-  res.status(200).send({ newUsername });
+
+  if (isRoomExist(roomId)) {
+    const newUsername = joinRoom(username, sessionToken, roomId);
+    res.status(200).send({ newUsername });
+  } else {
+    res.status(400);
+  }
 };

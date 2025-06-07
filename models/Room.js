@@ -100,3 +100,7 @@ export const generateUniqueRoomId = () => {
   } while (rooms[roomId]);
   return roomId;
 };
+
+export const isRoomExist = (roomId) => {
+  return !!rooms[roomId];
+};

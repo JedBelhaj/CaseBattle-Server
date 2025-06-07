@@ -6,6 +6,7 @@ import {
   getRoom,
   getUserByName,
   getUsers,
+  isRoomExist,
   joinRoom,
   setRooms,
 } from "../../models/Room";
@@ -19,7 +20,7 @@ describe("Room Tests", () => {
   beforeEach(() => {
     const newRooms = {
       ABCD: {
-        users: [new User("jed"), new User("jed1"), new User("jed3")],
+        users: [new User("jed"), new User("jed1", true), new User("jed3")],
       },
     };
     setRooms(newRooms);
@@ -89,5 +90,11 @@ describe("Room Tests", () => {
       rooms[id] = {};
       ids.push(id);
     }
+  });
+
+  it("tests if a room exists", () => {
+    const exists = isRoomExist("ABCD");
+    expect(exists).toBe(true);
+    expect(isRoomExist("a")).toBe(false);
   });
 });
