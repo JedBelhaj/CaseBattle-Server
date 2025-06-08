@@ -3,6 +3,7 @@ import http from "http";
 import { Server } from "socket.io";
 import cors from "cors";
 import { roomRoutes } from "./routes/roomRoutes.js";
+import { roomSocketHandlers } from "./sockets/roomSocket.js";
 
 const PORT = 5000;
 
@@ -26,11 +27,7 @@ app.get("/", (req, res) => {
   res.status(200).send("ok");
 });
 
-io.on("connection", (socket) => {
-  console.log("a client connected");
-
-  socket.emit("welcome", "Hello client!");
-});
+roomSocketHandlers(io);
 
 if (process.env.NODE_ENV !== "test") {
   server.listen(PORT, () => {
