@@ -10,7 +10,7 @@ describe("GET /", () => {
   });
 });
 
-describe("Room Endpoints", () => {
+describe("Room Creation / Joining", () => {
   beforeEach(() => {
     const newRooms = {
       ABCD: {
@@ -68,6 +68,44 @@ describe("Room Endpoints", () => {
       sessionToken: user.sessionToken,
     });
 
+    expect(user.activity).toBe(true);
+  });
+
+  it("should disconnect a user", async () => {
+    const user = getUserByName("jed", "ABCD");
+    await request(app).post("/room/join").send({
+      roomId: "ABCD",
+      username: user.name,
+      sessionToken: user.sessionToken,
+    });
+    expect(user.activity).toBe(true);
+
+    const res = await request(app).post("/room/disconnect").send({
+      roomId: "ABCD",
+      username: user.name,
+      sessionToken: user.sessionToken,
+    });
+    expect(res.statusCode).toBe(200);
+    expect(user.activity).toBe(false);
+  });
+
+  it("should refuse to disconnect a user if session token is not valid", async () => {
+    const user = getUserByName("jed", "ABCD");
+    await request(app).post("/room/join").send({
+      roomId: "ABCD",
+      username: user.name,
+      sessionToken: user.sessionToken,
+    });
+
+    expect(user.activity).toBe(true);
+
+    const res = await request(app).post("/room/disconnect").send({
+      roomId: "ABCD",
+      username: user.name,
+      sessionToken: "invalide token",
+    });
+
+    expect(res.statusCode).toBe(401);
     expect(user.activity).toBe(true);
   });
 });

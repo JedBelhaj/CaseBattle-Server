@@ -44,9 +44,10 @@ export const activateUser = (username, roomId, active = true) => {
   for (const user of users) {
     if (user.name === username) {
       user.activity = active;
-      break;
+      return true;
     }
   }
+  return false;
 };
 
 export const generateUniqueUsername = (username, roomId) => {

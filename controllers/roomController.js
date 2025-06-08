@@ -1,4 +1,11 @@
-import { createRoom, getRoom, isRoomExist, joinRoom } from "../models/Room.js";
+import {
+  activateUser,
+  createRoom,
+  getRoom,
+  getUserByName,
+  isRoomExist,
+  joinRoom,
+} from "../models/Room.js";
 
 export const handleGetRoom = (req, res) => {
   const room = getRoom(req.query.id);
@@ -29,5 +36,21 @@ export const handleJoinRoom = (req, res) => {
     res.status(200).send({ newUsername });
   } else {
     res.status(400);
+  }
+};
+
+export const handleDisconnect = (req, res) => {
+  const { roomId, username, sessionToken } = req.body;
+
+  if (isRoomExist(roomId)) {
+    const user = getUserByName(username, roomId);
+    if (user && user.sessionToken === sessionToken) {
+      activateUser(username, roomId, false);
+      res.status(200).send("disconnected");
+    } else {
+      res.status(401).send("user not found or sessionToken invalide");
+    }
+  } else {
+    res.status(404).send("room not found");
   }
 };
