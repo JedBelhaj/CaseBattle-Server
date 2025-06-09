@@ -1,32 +1,26 @@
 // test/integration/socket/socket.test.js
-import { server, app } from "../../../index.js"; // Adjust as needed
+import { server, app } from "../../../index.js";
 import { io as Client } from "socket.io-client";
 import request from "supertest";
 
+const BACKEND_URL = "http://localhost:5001";
 let httpServer;
-let clientSocket;
-let secondClient;
+
+const createClient = () => Client(BACKEND_URL);
 
 beforeAll((done) => {
   httpServer = server.listen(5001, () => {
-    clientSocket = Client("http://localhost:5001");
-
-    clientSocket.on("connect", () => {
-      done();
-    });
+    done();
   });
 });
 
 afterAll((done) => {
-  if (clientSocket.connected) clientSocket.disconnect();
-  if (secondClient?.connected) secondClient.disconnect();
   httpServer.close(done);
 });
 
 describe("Room Socket Handlers", () => {
   it("should emit welcome on connect", (done) => {
-    const socket = Client("http://localhost:5001");
-
+    const socket = createClient();
     socket.on("connect", () => {
       socket.once("welcome", (msg) => {
         expect(msg).toBe("Hello client!");
@@ -36,28 +30,41 @@ describe("Room Socket Handlers", () => {
     });
   });
 
-  it("should join a room and trigger userJoined to others", async () => {
+  it("should join a room and trigger user:joined to others", async () => {
     const res = await request(app)
       .post("/room/create")
       .send({ username: "socketTester" });
 
-    const { roomId } = res.body;
+    const { roomId, user } = res.body;
 
-    const promise = new Promise((resolve) => {
-      secondClient = Client("http://localhost:5001");
+    const socketA = createClient();
+    const socketB = createClient();
 
-      secondClient.on("connect", () => {
-        secondClient.emit("join", roomId);
+    await new Promise((resolve, reject) => {
+      socketA.on("connect", () => {
+        socketA.emit("user:join", roomId, user.sessionToken, user.name);
 
-        clientSocket.on("userJoined", (id) => {
-          expect(typeof id).toBe("string");
-          resolve();
+        socketB.on("connect", () => {
+          socketA.once("user:joined", (joinedUser) => {
+            try {
+              expect(joinedUser.name).toBe("socketTester");
+              expect(joinedUser.sessionToken).toBe(user.sessionToken);
+              expect(joinedUser.socketId).toBe(socketB.id);
+              expect(joinedUser.activity).toBe(true);
+              resolve();
+            } catch (err) {
+              reject(err);
+            } finally {
+              socketA.disconnect();
+              socketB.disconnect();
+            }
+          });
+
+          socketB.emit("user:join", roomId, user.sessionToken, user.name);
         });
-
-        clientSocket.emit("join", roomId);
       });
     });
-
-    await promise;
   });
+
+  it.todo("should leave room and trigger user:left event");
 });

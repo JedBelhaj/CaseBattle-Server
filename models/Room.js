@@ -152,3 +152,15 @@ export const setHost = (roomId) => {
 export const hasOnlineHost = (roomId) => {
   return getHost(roomId).activity;
 };
+
+export const setUserSocket = (socketId, sessionToken, roomId) => {
+  const users = getUsers(roomId);
+  for (const user of users) {
+    if (user.sessionToken === sessionToken) {
+      user.socketId = socketId;
+      activateUser(user.name, roomId);
+      return true;
+    }
+  }
+  return false;
+};

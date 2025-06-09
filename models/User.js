@@ -8,6 +8,7 @@ class User {
     this.activity = false;
     this.items = [];
     this.host = isHost;
+    this.socketId = null;
   }
 
   addItem(item) {
