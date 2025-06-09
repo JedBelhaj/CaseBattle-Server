@@ -3,12 +3,15 @@ import {
   createRoom,
   generateUniqueRoomId,
   generateUniqueUsername,
+  getHost,
   getRoom,
   getUserByName,
   getUsers,
   isRoomExist,
   joinRoom,
+  getOnlineUsers,
   setRooms,
+  setHost,
 } from "../../models/Room";
 import { getRooms, rooms } from "../../models/Room.js";
 import User from "../../models/User.js";
@@ -113,5 +116,42 @@ describe("Room Tests", () => {
     const exists = isRoomExist("ABCD");
     expect(exists).toBe(true);
     expect(isRoomExist("a")).toBe(false);
+  });
+
+  it("should return the host", () => {
+    const host = getHost("ABCD");
+    expect(host).toBeTruthy();
+  });
+
+  it("should get online users", () => {
+    const onlineUsers = getOnlineUsers("ABCD");
+    onlineUsers.forEach((u) => {
+      expect(u.activity).toBe(true);
+    });
+  });
+
+  it("should return false because has no online users", () => {
+    const ret = setHost("ABCD");
+    expect(ret).toBe(false);
+  });
+
+  it("should return the current host because the current host is online", () => {
+    const currentHost = getHost("ABCD");
+    currentHost.activity = true;
+    const newHost = setHost("ABCD");
+    expect(newHost).toBe(currentHost);
+  });
+
+  it("should set a new host for the room", () => {
+    const users = getUsers("ABCD");
+    users.forEach((u) => {
+      if (!u.host) {
+        u.activity = true;
+      }
+    });
+    const currentHost = getHost("ABCD");
+    const newHost = setHost("ABCD");
+    expect(newHost).not.toBe(currentHost);
+    expect(currentHost.host).toBe(false);
   });
 });

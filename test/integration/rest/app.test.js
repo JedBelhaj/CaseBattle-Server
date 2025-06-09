@@ -1,7 +1,15 @@
 import request from "supertest";
 import { app } from "../../../index.js";
 import User from "../../../models/User.js";
-import { getUserByName, setRooms } from "../../../models/Room.js";
+import {
+  activateUser,
+  getHost,
+  getRoom,
+  getUserByName,
+  getUsers,
+  setRooms,
+} from "../../../models/Room.js";
+import { jest } from "@jest/globals";
 
 describe("test if http server and socketio server are working", () => {
   it("should return ok", async () => {
@@ -123,31 +131,109 @@ describe("Room host handling, and deletion", () => {
         users: [new User("jed"), new User("jed1", true), new User("jed3")],
       },
     };
+    newRooms["ABCD"].users.forEach((u) => {
+      if (!u.host) {
+        u.activity = true;
+      }
+    });
     setRooms(newRooms);
   });
 
-  it("should assign a new host after the current host disconnects for 10 seconds", () => {
-    // simulate disconnect and time passage
-  });
+  it("should assign a new host after the current host disconnects for 10 seconds", async () => {
+    jest.useFakeTimers();
 
-  it("should delete the room when no user is active for 10 seconds", () => {
-    // simulate inactivity and time passage
+    const oldHost = getHost("ABCD");
+    const users = getUsers("ABCD");
+
+    await request(app).post("/room/disconnect").send({
+      roomId: "ABCD",
+      username: oldHost.name,
+      sessionToken: oldHost.sessionToken,
+    });
+
+    expect(oldHost).toBeTruthy();
+    expect(oldHost.activity).toBe(false);
+    jest.advanceTimersByTime(10000);
+
+    const host = getHost("ABCD");
+
+    expect(users).toBeTruthy();
+    expect(host).toBeTruthy();
+
+    expect(oldHost).not.toBe(host);
+    expect(users).toContain(host);
+    expect(host.activity).toBe(true);
   });
 
   it("should not assign a new host if the host reconnects within 10 seconds", () => {
-    // simulate short disconnect, then reconnect
+    jest.useFakeTimers();
+
+    const oldHost = getHost("ABCD");
+
+    // simulate host disconnect
+    activateUser(oldHost.name, "ABCD", false);
+    expect(oldHost.activity).toBe(false);
+
+    // simulate host reconnecting within 10 seconds
+    jest.advanceTimersByTime(5000);
+    activateUser(oldHost.name, "ABCD", true);
+    jest.advanceTimersByTime(5000);
+
+    // verify that the host remains unchanged
+    const host = getHost("ABCD");
+    expect(host).toBe(oldHost);
+  });
+
+  it("should delete the room when no user is active for 10 seconds", async () => {
+    jest.useFakeTimers();
+
+    const users = getUsers("ABCD");
+    users.forEach((u) => activateUser(u.name, "ABCD"));
+    for (const u of users) {
+      await request(app).post("/room/disconnect").send({
+        roomId: "ABCD",
+        username: u.name,
+        sessionToken: u.sessionToken,
+      });
+    }
+
+    // simulate no user activity
+    jest.advanceTimersByTime(10000);
+
+    const room = getRoom("ABCD");
+    expect(room).toBeUndefined();
+  });
+
+  it("should not delete a room if a user reconnects", () => {
+    jest.useFakeTimers();
+
+    const users = getUsers("ABCD");
+    users.forEach((u) => activateUser(u.name, "ABCD", false));
+
+    // simulate one user reconnecting
+    activateUser(users[0].name, "ABCD", true);
+
+    // advance time
+    jest.advanceTimersByTime(10000);
+
+    const room = getUsers("ABCD");
+    expect(room).toBeTruthy();
   });
 
   it("should not delete a room if at least one user remains active", () => {
-    // simulate other users staying active
-  });
+    jest.useFakeTimers();
 
-  it("should keep the same host if they remain active", () => {
-    // verify host remains unchanged with normal activity
-  });
+    const users = getUsers("ABCD");
+    users.forEach((u) => activateUser(u.name, "ABCD", false));
 
-  it("should not assign host if no other user is available", () => {
-    // simulate a room with only a disconnected host
+    // simulate one user remaining active
+    activateUser(users[0].name, "ABCD", true);
+
+    // advance time
+    jest.advanceTimersByTime(10000);
+
+    const room = getUsers("ABCD");
+    expect(room).toBeTruthy();
   });
 });
 

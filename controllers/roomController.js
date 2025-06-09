@@ -1,11 +1,17 @@
 import {
   activateUser,
   createRoom,
+  deleteRoom,
+  getOnlineUsers,
   getRoom,
   getUserByName,
   isRoomExist,
   joinRoom,
+  setHost,
 } from "../models/Room.js";
+
+let hostAssignmentTimeoutIDs = {};
+let roomDeletionTimeoutIDs = {};
 
 export const handleGetRoom = (req, res) => {
   const room = getRoom(req.query.id);
@@ -29,7 +35,17 @@ export const handleCreateRoom = (req, res) => {
 };
 
 export const handleJoinRoom = (req, res) => {
-  const { roomId, username, sessionToken } = req.body;
+  let { roomId, username, sessionToken } = req.body;
+
+  // check for host reconnection and cancel host reassignment
+  const user = getUserByName(username, roomId);
+  if (user?.host) {
+    clearTimeout(hostAssignmentTimeoutIDs[roomId]);
+  }
+  // check for room deletion and cancel deletion
+  if (roomDeletionTimeoutIDs[roomId]) {
+    clearTimeout(roomDeletionTimeoutIDs[roomId]);
+  }
 
   if (isRoomExist(roomId)) {
     const { newUsername, newSessionToken } = joinRoom(
@@ -37,6 +53,9 @@ export const handleJoinRoom = (req, res) => {
       roomId,
       sessionToken
     );
+    if (!sessionToken) {
+      sessionToken = newSessionToken;
+    }
     res.status(200).send({ newUsername, sessionToken });
   } else {
     res.status(400);
@@ -50,6 +69,16 @@ export const handleDisconnect = (req, res) => {
     const user = getUserByName(username, roomId);
     if (user && user.sessionToken === sessionToken) {
       activateUser(username, roomId, false);
+      if (user.host) {
+        hostAssignmentTimeoutIDs[roomId] = setTimeout(() => {
+          setHost(roomId);
+        }, 10000);
+      }
+      if (getOnlineUsers(roomId).length === 0) {
+        roomDeletionTimeoutIDs[roomId] = setTimeout(() => {
+          deleteRoom(roomId);
+        }, 10000);
+      }
       res.status(200).send("disconnected");
     } else {
       res.status(401).send("user not found or sessionToken invalide");

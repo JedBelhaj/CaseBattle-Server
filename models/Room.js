@@ -1,4 +1,5 @@
 import User from "./User.js";
+import { getRandomElement } from "./helpers.js";
 
 export let rooms = {};
 
@@ -13,6 +14,15 @@ export const getRooms = () => {
 
 export const getRoom = (roomId) => {
   return rooms[roomId];
+};
+
+export const deleteRoom = (roomId) => {
+  if (rooms[roomId]) {
+    delete rooms[roomId];
+    return true;
+  } else {
+    return false;
+  }
 };
 
 export const createRoom = (hostUsername) => {
@@ -111,4 +121,34 @@ export const generateUniqueRoomId = () => {
 
 export const isRoomExist = (roomId) => {
   return !!rooms[roomId];
+};
+
+export const getHost = (roomId) => {
+  return rooms[roomId].users.find((u) => u.host);
+};
+
+export const getOnlineUsers = (roomId) => {
+  const users = getUsers(roomId);
+  return users.filter((u) => u.activity);
+};
+
+export const setHost = (roomId) => {
+  const onlineUsers = getOnlineUsers(roomId);
+  const oldHost = getHost(roomId);
+  if (oldHost.activity) {
+    return oldHost;
+  }
+  oldHost.host = false;
+  if (onlineUsers.length > 0) {
+    console.log("changing hosts");
+
+    const nextHost = getRandomElement(onlineUsers);
+    nextHost.host = true;
+    return nextHost;
+  }
+  return false;
+};
+
+export const hasOnlineHost = (roomId) => {
+  return getHost(roomId).activity;
 };
