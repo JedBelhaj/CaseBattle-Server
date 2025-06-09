@@ -18,9 +18,9 @@ export const handleCreateRoom = (req, res) => {
   if (!username) {
     res.status(400).send({ error: "cant create room without username" });
   }
-  const roomId = createRoom(username);
+  const { roomId, user } = createRoom(username);
   if (roomId) {
-    res.status(200).json({ roomId });
+    res.status(200).json({ roomId, user });
   } else {
     return res
       .status(400)
@@ -32,8 +32,12 @@ export const handleJoinRoom = (req, res) => {
   const { roomId, username, sessionToken } = req.body;
 
   if (isRoomExist(roomId)) {
-    const newUsername = joinRoom(username, sessionToken, roomId);
-    res.status(200).send({ newUsername });
+    const { newUsername, newSessionToken } = joinRoom(
+      username,
+      roomId,
+      sessionToken
+    );
+    res.status(200).send({ newUsername, sessionToken });
   } else {
     res.status(400);
   }

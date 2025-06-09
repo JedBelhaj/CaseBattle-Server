@@ -1,61 +1,12 @@
 import request from "supertest";
-import { app } from "../../index.js";
-import User from "../../models/User.js";
-import { getUserByName, setRooms } from "../../models/Room.js";
-import { server } from "../../index.js";
-import { io as Client } from "socket.io-client";
-
-let socket;
-const PORT = 5001;
-const SOCKET_URL = `http://localhost:${PORT}`;
-
-beforeAll((done) => {
-  server.listen(5001, () => {
-    console.log("Test server listening");
-    done();
-  });
-});
-
-afterAll((done) => {
-  if (socket?.connected) {
-    socket.disconnect();
-  }
-  server.close(done);
-});
+import { app } from "../../../index.js";
+import User from "../../../models/User.js";
+import { getUserByName, setRooms } from "../../../models/Room.js";
 
 describe("test if http server and socketio server are working", () => {
   it("should return ok", async () => {
     const res = await request(app).get("/");
     expect(res.statusCode).toEqual(200);
-  });
-
-  it("checks if the server is running", () => {
-    expect(server.listening).toBe(true);
-  });
-
-  test("should receive welcome message on connect", (done) => {
-    socket = Client(SOCKET_URL, {
-      transports: ["websocket"], // FORCE websocket to avoid polling bugs and delays
-      reconnection: false,
-    });
-
-    socket.on("connect", () => {
-      console.log("Connected!");
-    });
-
-    socket.on("connect_error", (err) => {
-      console.error("Connection failed:", err.message);
-      done(err); // Fail the test
-    });
-
-    socket.on("welcome", (msg) => {
-      try {
-        expect(msg).toBe("Hello client!");
-        done();
-      } catch (error) {
-        done(error);
-      }
-    });
   });
 });
 
@@ -75,9 +26,10 @@ describe("Room Creation / Joining / Disconnection", () => {
       .send({ username: "testuser" });
 
     expect(res.statusCode).toEqual(200);
-    const { roomId } = res.body;
+    const { roomId, user } = res.body;
     expect(roomId).toBeTruthy();
     expect(roomId).toHaveLength(4);
+    expect(user).toBeTruthy();
   });
 
   it("should refuse to create a room without a username", async () => {
@@ -91,9 +43,13 @@ describe("Room Creation / Joining / Disconnection", () => {
       username: "newUser",
       sessionToken: "token",
     });
+    console.log(res.error);
+
     expect(res.statusCode).toEqual(200);
-    const { newUsername } = res.body;
-    expect(newUsername).toBeFalsy();
+
+    const { newUsername, sessionToken } = res.body;
+    expect(newUsername).toBe("newUser");
+    expect(sessionToken).toBeTruthy();
   });
 
   it("should join a room and return a new username", async () => {

@@ -17,14 +17,14 @@ export const getRoom = (roomId) => {
 
 export const createRoom = (hostUsername) => {
   const roomId = generateUniqueRoomId();
-
+  const user = new User(hostUsername, true);
   if (roomId) {
     rooms[roomId] = {
-      users: [new User(hostUsername, true)],
+      users: [user],
     };
   }
 
-  return roomId;
+  return { roomId, user };
 };
 
 export const getUserByName = (username, roomId) => {
@@ -66,21 +66,28 @@ export const generateUniqueUsername = (username, roomId) => {
   return newUsername;
 };
 
-export const joinRoom = (username, sessionToken, roomId) => {
+export const joinRoom = (username, roomId, sessionToken = "") => {
   const existingUser = getUserByName(username, roomId);
+
   if (!existingUser) {
     console.log("new user! joining...");
-    rooms[roomId].users.push(new User(username));
+    const user = new User(username);
+    rooms[roomId].users.push(user);
+    return { newUsername: username, newSessionToken: user.sessionToken };
   } else {
     if (existingUser.sessionToken === sessionToken) {
       console.log("rejoining...");
       activateUser(username, roomId);
+      return {
+        newUsername: username,
+        newSessionToken: existingUser.sessionToken,
+      };
     } else {
       console.log("changing username and joining...");
-
       const newUsername = generateUniqueUsername(username, roomId);
-      rooms[roomId].users.push(new User(newUsername));
-      return newUsername;
+      const user = new User(newUsername);
+      rooms[roomId].users.push(user);
+      return { newUsername, newSessionToken: user.sessionToken };
     }
   }
 };
