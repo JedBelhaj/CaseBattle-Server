@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for server/routes/roomRoutes.js</title>
+    <title>Code coverage report for server/sockets/roomHandlers.js</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../../prettify.css" />
     <link rel="stylesheet" href="../../base.css" />
@@ -19,34 +19,34 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../index.html">All files</a> / <a href="index.html">server/routes</a> roomRoutes.js</h1>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">server/sockets</a> roomHandlers.js</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">90.9% </span>
+                <span class="strong">11.11% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>10/11</span>
+                <span class='fraction'>1/9</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/0</span>
+                <span class='fraction'>0/2</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">80% </span>
+                <span class="strong">0% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>4/5</span>
+                <span class='fraction'>0/1</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">11.11% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>6/6</span>
+                <span class='fraction'>1/9</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line low'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -79,38 +79,41 @@
 <a name='L14'></a><a href='#L14'>14</a>
 <a name='L15'></a><a href='#L15'>15</a>
 <a name='L16'></a><a href='#L16'>16</a>
-<a name='L17'></a><a href='#L17'>17</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L17'></a><a href='#L17'>17</a>
+<a name='L18'></a><a href='#L18'>18</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">5x</span>
-<span class="cline-any cline-yes">6x</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import express from "express";
-import {
-  handleGetRoom,
-  handleCreateRoom,
-  handleJoinRoom,
-  handleDisconnect,
-} from "../controllers/roomController.js";
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { getUserByName, isRoomExist, setUserSocket } from "../models/Room.js";
 &nbsp;
-const router = express.Router();
+export const handleUserJoin = <span class="fstat-no" title="function not covered" >(r</span>oomId, sessionToken, username, socket) =&gt; {
+  const user = <span class="cstat-no" title="statement not covered" >getUserByName(username, roomId);</span>
 &nbsp;
-router.get("/get", <span class="fstat-no" title="function not covered" >(r</span>eq, res) =&gt; <span class="cstat-no" title="statement not covered" >handleGetRoom(req, res))</span>;
-router.post("/create", (req, res) =&gt; handleCreateRoom(req, res));
-router.post("/join", (req, res) =&gt; handleJoinRoom(req, res));
-router.post("/disconnect", (req, res) =&gt; handleDisconnect(req, res));
+  const socketSet = <span class="cstat-no" title="statement not covered" >setUserSocket(socket.id, sessionToken, roomId);</span>
+<span class="cstat-no" title="statement not covered" >  if (!socketSet) {</span>
+<span class="cstat-no" title="statement not covered" >    console.error(</span>
+      `Failed to set socket for user ${username} in room ${roomId}`
+    );
+<span class="cstat-no" title="statement not covered" >    return;</span>
+  }
 &nbsp;
-export const roomRoutes = () =&gt; router;
+<span class="cstat-no" title="statement not covered" >  socket.join(roomId);</span>
+<span class="cstat-no" title="statement not covered" >  console.log(`${username} with socket id ${socket.id} joined room ${roomId}`);</span>
+<span class="cstat-no" title="statement not covered" >  socket.to(roomId).emit("user:joined", user);</span>
+};
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
