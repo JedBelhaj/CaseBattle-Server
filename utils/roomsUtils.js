@@ -38,6 +38,7 @@ const addUserToRoom = (roomId, socketId, username) => {
   if (!rooms[roomId].users[username]) {
     rooms[roomId].users[username] = new User(username, socketId);
   } else {
+    rooms[roomId].users[username].socketId = socketId;
     markUserActive(roomId, username);
   }
 };
@@ -83,43 +84,47 @@ const getActiveUsersInRoom = (roomId) => {
   return Object.values(rooms[roomId].users).filter((user) => user.activity);
 };
 
+// Pending host-reassignment timers, keyed by roomId, so overlapping
+// updateUsers() calls don't stack up multiple uncancelled reassignments.
+const hostReassignTimers = {};
+
+const broadcastUsers = (io, roomId) => {
+  if (!rooms[roomId]) return;
+  io.to(roomId).emit(
+    "update_users",
+    Object.values(rooms[roomId].users).map((u) => {
+      u.host = u.name === rooms[roomId].host;
+      return u;
+    })
+  );
+};
+
 /**
  * Update all users in a room.
  * @param {object} io - The Socket.IO instance.
  * @param {string} roomId - The ID of the room.
  */
 const updateUsers = (io, roomId) => {
-  if (rooms[roomId]) {
-    if (!isHostOnline(roomId) && getActiveUsersInRoom(roomId).length !== 0) {
-      console.log("changing hosts...");
-      setTimeout(() => {
-        assignNewHost(roomId);
-        console.log(rooms);
-        io.to(roomId).emit(
-          "update_users",
-          Object.values(rooms[roomId]?.users).map((u) => {
-            if (u.name === rooms[roomId].host) {
-              u.host = true;
-            } else {
-              u.host = false;
-            }
-            return u;
-          })
-        );
-      }, 10000);
-    } else {
-      io.to(roomId).emit(
-        "update_users",
-        Object.values(rooms[roomId].users).map((u) => {
-          if (u.name === rooms[roomId].host) {
-            u.host = true;
-          } else {
-            u.host = false;
-          }
-          return u;
-        })
-      );
+  if (!rooms[roomId]) return;
+
+  if (!isHostOnline(roomId) && getActiveUsersInRoom(roomId).length !== 0) {
+    if (hostReassignTimers[roomId]) {
+      clearTimeout(hostReassignTimers[roomId]);
     }
+    console.log("changing hosts...");
+    hostReassignTimers[roomId] = setTimeout(() => {
+      delete hostReassignTimers[roomId];
+      // Re-check: the host may have reconnected while this timer was pending.
+      if (!rooms[roomId] || isHostOnline(roomId)) return;
+      assignNewHost(roomId);
+      broadcastUsers(io, roomId);
+    }, 10000);
+  } else {
+    if (hostReassignTimers[roomId]) {
+      clearTimeout(hostReassignTimers[roomId]);
+      delete hostReassignTimers[roomId];
+    }
+    broadcastUsers(io, roomId);
   }
 };
 
@@ -140,6 +145,31 @@ const isUserInRoom = (roomId, username) => {
   return rooms[roomId]?.users[username] !== undefined;
 };
 
+/**
+ * Find the user in a room that owns a given socket id.
+ * @param {string} roomId - The ID of the room.
+ * @param {string} socketId - The socket ID to look up.
+ * @returns {User|undefined}
+ */
+const getUserBySocketId = (roomId, socketId) => {
+  return Object.values(rooms[roomId]?.users || {}).find(
+    (u) => u.socketId === socketId
+  );
+};
+
+/**
+ * Whether a given socket belongs to the current host of a room.
+ * @param {string} roomId - The ID of the room.
+ * @param {string} socketId - The socket ID to check.
+ * @returns {boolean}
+ */
+const isSocketHost = (roomId, socketId) => {
+  const room = rooms[roomId];
+  if (!room) return false;
+  const user = getUserBySocketId(roomId, socketId);
+  return !!user && user.name === room.host;
+};
+
 const isUserActive = (roomId, username) => {
   return rooms[roomId]?.users[username]?.activity | false;
 };
@@ -155,4 +185,6 @@ module.exports = {
   updateUsers,
   isUserInRoom,
   isUserActive,
+  getUserBySocketId,
+  isSocketHost,
 };

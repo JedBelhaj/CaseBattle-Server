@@ -8,7 +8,19 @@ const {
   getActiveUsersInRoom,
   updateUsers,
   isUserInRoom,
+  getUserBySocketId,
+  isSocketHost,
 } = require("./roomsUtils");
+const {
+  getOrCreateBattleState,
+  updateBattleSettings,
+  openCase,
+  startBattle,
+  resetBattle,
+} = require("./battleUtils");
+
+// Mirrors CHAT_CONSTANTS.MAX_MESSAGE_LENGTH in the client's constants/chat.js.
+const CHAT_MAX_MESSAGE_LENGTH = 200;
 
 const handleSocketEvents = (io, socket) => {
   socket.on("create_room", (username) => {
@@ -23,6 +35,7 @@ const handleSocketEvents = (io, socket) => {
     console.log(`Room created: ${roomId} by host ${socket.id}`);
 
     socket.emit("room_created", roomId);
+    socket.emit("battle_state", getOrCreateBattleState(roomId));
     updateUsers(io, roomId);
   });
 
@@ -35,11 +48,65 @@ const handleSocketEvents = (io, socket) => {
 
         updateUsers(io, roomId);
         socket.emit("room_found");
+        socket.emit("battle_state", getOrCreateBattleState(roomId));
         console.log(rooms);
       }
     } else {
       socket.emit("error", "Room not found");
     }
+  });
+
+  socket.on("update_battle_settings", ({ roomId, caseIds }) => {
+    if (!roomExists(roomId) || !isSocketHost(roomId, socket.id)) return;
+
+    const battle = updateBattleSettings(roomId, caseIds);
+    if (!battle) return;
+
+    io.to(roomId).emit("battle_settings_updated", battle);
+  });
+
+  socket.on("start_battle", ({ roomId }) => {
+    if (!roomExists(roomId) || !isSocketHost(roomId, socket.id)) return;
+
+    const result = startBattle(io, roomId);
+    if (!result.success) {
+      socket.emit("error", result.reason);
+    }
+  });
+
+  socket.on("reset_battle", ({ roomId }) => {
+    if (!roomExists(roomId) || !isSocketHost(roomId, socket.id)) return;
+
+    const result = resetBattle(io, roomId);
+    if (!result.success) {
+      socket.emit("error", result.reason);
+    }
+  });
+
+  // Derives the acting username from the requesting socket itself (rather
+  // than trusting a client-supplied username) so one player can't open
+  // cases on another's behalf.
+  socket.on("open_case", ({ roomId }) => {
+    if (!roomExists(roomId)) return;
+
+    const user = getUserBySocketId(roomId, socket.id);
+    if (!user) return;
+
+    const result = openCase(io, roomId, user.name);
+    if (!result.success) {
+      socket.emit("error", result.reason);
+    }
+  });
+
+  // Pull-based resync: used on mount and whenever a socket (re)connects, so
+  // a reconnect or a late joiner can reconstruct "what round are we on"
+  // instead of relying solely on having caught a one-shot broadcast.
+  socket.on("request_battle_state", ({ roomId }, callback) => {
+    if (!roomExists(roomId)) {
+      callback(null);
+      return;
+    }
+    callback(getOrCreateBattleState(roomId));
   });
 
   socket.on("leave_room", (roomId, username) => {
@@ -54,8 +121,24 @@ const handleSocketEvents = (io, socket) => {
     callback(roomExists(roomId));
   });
 
-  socket.on("in_room", (roomId, username, callback) => {
+  socket.on("in_room", ({ roomId, username }, callback) => {
     callback(isUserInRoom(roomId, username));
+  });
+
+  socket.on("chat_message", ({ roomId, text }) => {
+    if (!roomExists(roomId) || typeof text !== "string") return;
+
+    const trimmed = text.trim().slice(0, CHAT_MAX_MESSAGE_LENGTH);
+    if (!trimmed) return;
+
+    const sender = getUserBySocketId(roomId, socket.id);
+    if (!sender || !sender.activity) return;
+
+    io.to(roomId).emit("chat_message", {
+      username: sender.name,
+      text: trimmed,
+      timestamp: Date.now(),
+    });
   });
 
   socket.on("req_update_users", (roomId) => {
